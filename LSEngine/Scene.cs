@@ -12,7 +12,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Linq;
 
 namespace LSEngine
 {
@@ -23,6 +22,14 @@ namespace LSEngine
             : base(gameWindowSettings, nativeWindowSettings)
         {
         }
+
+        internal void SetSceneSettings(SceneSettings s)
+        {
+            this.SceneSettings = s;
+            cam.MoveSpeed = s.CameraSettings.CameraSpeed;
+            this.MinRenderDistance = s.CameraSettings.MinRenderDistance;
+            this.MaxRenderDistance = s.CameraSettings.MaxRenderDistance;
+        }
 #if DebugPrints && DEBUG
         int debugIndex = 0;
 #endif
@@ -32,10 +39,12 @@ namespace LSEngine
         Vector2[] texcoorddata;
         Vector3[] normdata;
 
+        SceneSettings SceneSettings;
         int[] indicedata;
         int ibo_elements;
         int vao;
 
+        float MinRenderDistance, MaxRenderDistance;
         List<RenderObject> objects = new();
         Camera cam = new();
         List<Light> lights = new();
@@ -50,6 +59,8 @@ namespace LSEngine
 
         float time = 0.0f;
         float dtime = 0.0f;
+        int refreshCounter = 0;
+        const int maxRefresh = 1000;
         #endregion
 
         protected override void OnLoad()
@@ -59,8 +70,8 @@ namespace LSEngine
             //Title = "LSEngine";
             GL.ClearColor(Color4.Gray);
             GL.Enable(EnableCap.DepthTest);
-            GL.Enable(EnableCap.CullFace);
-            GL.Enable(EnableCap.Texture2D);
+            //GL.Enable(EnableCap.CullFace);
+            //GL.Enable(EnableCap.Texture2D);
             Console.WriteLine("Graphics card used: " + GL.GetString(StringName.Vendor) + ", GL version:" +  GL.GetString(StringName.Version));
         }
 
@@ -172,15 +183,16 @@ namespace LSEngine
                 objects.Add(part);
             }
 
-            Light sunLight = new(new Vector3(), new Vector3(0.6f));
-            sunLight.Type = LightType.Directional;
+            Light sunLight = new(new Vector3(), new Vector3(0.9f));
+            sunLight.Type = LightType.Point;
+            sunLight.ConeAngle = 0.1f;
             sunLight.Direction = new Vector3(2, 5, 1).Normalized();
             lights.Add(sunLight);
 
-            Light light = new(new(0,2,2), new(0.6f),0.2f);
-            light.Type = LightType.Spot;
-            light.Direction = new Vector3(0, 0, 1).Normalized();
-            lights.Add(light);
+            //Light light = new(new(0,2,2), new(0.6f),0.2f);
+            //light.Type = LightType.Spot;
+            //light.Direction = new Vector3(0, 0, 1).Normalized();
+            //lights.Add(light);
 
         }
 
@@ -379,29 +391,41 @@ namespace LSEngine
 #if DebugPrints && DEBUG
             Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
 #endif
-            List<Vector3> verts = new();
-            List<int> inds = new();
-            List<Vector3> colors = new();
-            List<Vector2> texcoords = new();
-            List<Vector3> normals = new();
 
-            // Assemble vertex and indice data for all volumes
-            int vertcount = 0;
-            foreach (RenderObject v in objects)
+
+            dtime = (float)args.Time;
+            time += dtime;
+            if (refreshCounter++ % maxRefresh == 0)
             {
-                verts.AddRange(v.GetVerts().ToList());
-                inds.AddRange(v.GetIndices(vertcount).ToList());
-                colors.AddRange(v.GetColorData().ToList());
-                texcoords.AddRange(v.GetTextureCoords());
-                normals.AddRange(v.GetNormals().ToList());
-                vertcount += v.VertCount;
-            }
+                List<Vector3> verts = new();
+                List<int> inds = new();
+                List<Vector3> colors = new();
+                List<Vector2> texcoords = new();
+                List<Vector3> normals = new();
 
-            vertdata = verts.ToArray();
-            indicedata = inds.ToArray();
-            coldata = colors.ToArray();
-            texcoorddata = texcoords.ToArray();
-            normdata = normals.ToArray();
+                // Assemble vertex and indice data for all volumes
+                int vertcount = 0;
+                foreach (RenderObject v in objects)
+                {
+                    verts.AddRange(v.GetVerts());
+                    inds.AddRange(v.GetIndices(vertcount));
+                    colors.AddRange(v.GetColorData());
+                    texcoords.AddRange(v.GetTextureCoords());
+                    normals.AddRange(v.GetNormals());
+                    vertcount += v.VertCount;
+                }
+
+                vertdata = verts.ToArray();
+                indicedata = inds.ToArray();
+                coldata = colors.ToArray();
+                texcoorddata = texcoords.ToArray();
+                normdata = normals.ToArray();
+
+#if PrintFPS
+                Console.WriteLine(1 / (dtime) + " FPS");
+#endif
+
+            }
 #if DebugPrints && DEBUG
             Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
 #endif
@@ -461,12 +485,7 @@ namespace LSEngine
 #endif
             // Update object positions
 
-            dtime = (float)args.Time;
-#if PrintFPS
-            Console.WriteLine( 1 / (dtime) + " FPS");
-#endif
 
-            time += dtime;
 #if DebugPrints && DEBUG
             Console.WriteLine(time);
 #endif
@@ -475,7 +494,7 @@ namespace LSEngine
             foreach (RenderObject v in objects)
             {
                 v.CalculateModelMatrix();
-                v.ViewProjectionMatrix = cam.GetViewMatrix() * Matrix4.CreatePerspectiveFieldOfView(1.3f, ClientSize.X / (float)ClientSize.Y, 0.2f, 2000.0f);
+                v.ViewProjectionMatrix = cam.GetViewMatrix() * Matrix4.CreatePerspectiveFieldOfView(1.3f, ClientSize.X / (float)ClientSize.Y, MinRenderDistance, MaxRenderDistance);
                 v.ModelViewProjectionMatrix = v.ModelMatrix * v.ViewProjectionMatrix;
             }
 #if DebugPrints && DEBUG
@@ -533,7 +552,7 @@ namespace LSEngine
 #endif
             }
 
-            if (KeyboardState.IsKeyDown(Keys.Q))
+            if (KeyboardState.IsKeyDown(Keys.Space))
             {
                 cam.Move(0f, 0f, 0.1f);
 #if DebugPrints && DEBUG
@@ -541,7 +560,7 @@ namespace LSEngine
 #endif
             }
 
-            if (KeyboardState.IsKeyDown(Keys.E))
+            if (KeyboardState.IsKeyDown(Keys.LeftShift))
             {
                 cam.Move(0f, 0f, -0.1f);
 #if DebugPrints && DEBUG
@@ -556,7 +575,18 @@ namespace LSEngine
                     this.WindowState = WindowState.Normal;
                 GL.Viewport(0, 0, Size.X, Size.Y);
             }
-
+            if (KeyboardState.IsKeyPressed(Keys.L))
+                PrintLights();
+            if (KeyboardState.IsKeyDown(Keys.LeftControl))
+                cam.MoveSpeed = 15f;
+            else
+            {
+                cam.MoveSpeed = SceneSettings.CameraSettings.CameraSpeed;
+            }
+            if (KeyboardState.IsKeyPressed(Keys.KeyPadAdd))
+                this.lights[0].AmbientIntensity += 0.1f;
+            if (KeyboardState.IsKeyPressed(Keys.KeyPadSubtract))
+                this.lights[0].AmbientIntensity -= 0.1f;
             if (IsFocused)
             {
                 Vector2 delta = lastMousePos - new Vector2(MouseState.X,MouseState.Y);
@@ -570,6 +600,15 @@ namespace LSEngine
                 Console.WriteLine(cam.Orientation);
 #endif
                 lastMousePos = new Vector2(MouseState.X, MouseState.Y);
+            }
+
+        }
+
+        private void PrintLights()
+        {
+            for (int i = 0; i < lights.Count; i++)
+            {
+                Console.WriteLine( i + " " + lights[i].Type +  " Brightness: " + lights[i].AmbientIntensity);
             }
         }
 

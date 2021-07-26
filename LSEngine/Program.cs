@@ -15,8 +15,23 @@ namespace LSEngine
 
             using (var scene = new Scene(GameWindowSettings.Default, nativeWindowSettings))
             {
+                SceneSettings s = new();
+                scene.SetSceneSettings(s);
                 scene.Run();
             }
         }
+    }
+
+    class SceneSettings
+    {
+        public CameraSettings CameraSettings { get; set; } = new();
+    }
+
+
+    public class CameraSettings
+    {
+        public float MinRenderDistance { get; set; } = 0.1f;
+        public float MaxRenderDistance { get; set; } = 5000f;
+        public float CameraSpeed { get; set; } = 5f;
     }
 }
