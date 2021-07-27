@@ -3,6 +3,10 @@
     "LSEngine": {
       "commandName": "Project",
       "workingDirectory": "H:\\GitHub\\LSEngine\\LSEngine"
+    },
+    "LSEngine-laptop": {
+      "commandName": "Project",
+      "workingDirectory": "C:\\Users\\Lukáš\\Documents\\GitHub\\LSEngine\\LSEngine\\LSEngine"
     }
   }
 }

@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Linq;
 
 namespace LSEngine
 {
@@ -44,6 +45,10 @@ namespace LSEngine
         int ibo_elements;
         int vao;
 
+
+        // if dynamically adding objects, check references of this boolean, you might want to change the use of it.
+        public bool objectsListHasChanged = true;
+
         float MinRenderDistance, MaxRenderDistance;
         List<RenderObject> objects = new();
         Camera cam = new();
@@ -54,13 +59,15 @@ namespace LSEngine
 
         Dictionary<string, int> textures = new();
         Dictionary<string, ShaderProgram> shaders = new();
+        List<string> shadersList = new();
         string activeShader = "normal";
+        int currentShaderIndex = 0;
         Dictionary<String, Material> materials = new();
 
         float time = 0.0f;
         float dtime = 0.0f;
         int refreshCounter = 0;
-        const int maxRefresh = 1000;
+        const int maxRefresh = 60;
         #endregion
 
         protected override void OnLoad()
@@ -72,6 +79,7 @@ namespace LSEngine
             GL.Enable(EnableCap.DepthTest);
             //GL.Enable(EnableCap.CullFace);
             //GL.Enable(EnableCap.Texture2D);
+            PrintControls();
             Console.WriteLine("Graphics card used: " + GL.GetString(StringName.Vendor) + ", GL version:" +  GL.GetString(StringName.Version));
         }
 
@@ -97,9 +105,15 @@ namespace LSEngine
         {
             // Load Materials and Textures
             LoadMaterials("Materials/sponza.mtl");
-            shaders.Add("normal", new("Shaders/vs_norm.glsl", "Shaders/fs_norm.glsl", true));
+            shaders.Add("normal_map", new("Shaders/vs_norm.glsl", "Shaders/fs_norm.glsl", true));
+            shadersList.Add("normal_map");
+            shaders.Add("simple_shadow", new("Shaders/vs_simple_shadow.glsl", "Shaders/fs_simple_shadow.glsl", true));
+            shadersList.Add("simple_shadow");
             shaders.Add("lit_advanced", new("Shaders/vs_lit.glsl", "Shaders/fs_lit_advanced.glsl", true));
-            
+            shadersList.Add("lit_advanced");
+            shaders.Add("poor_mans_zBuffer", new("Shaders/vs_zBuffer.glsl", "Shaders/fs_zBuffer.glsl", true));
+            shadersList.Add("poor_mans_zBuffer");
+
         }
 
         private void LoadMaterials(string filename)
@@ -183,10 +197,10 @@ namespace LSEngine
                 objects.Add(part);
             }
 
-            Light sunLight = new(new Vector3(), new Vector3(0.9f));
-            sunLight.Type = LightType.Point;
-            sunLight.ConeAngle = 0.1f;
-            sunLight.Direction = new Vector3(2, 5, 1).Normalized();
+            Light sunLight = new(new Vector3(0, 5, 0), new Vector3(1), 0.9f, 0.9f);
+            sunLight.Type = LightType.Directional;
+            sunLight.ConeAngle = 10f;
+            sunLight.Direction = new Vector3(0, 1, 0).Normalized();
             lights.Add(sunLight);
 
             //Light light = new(new(0,2,2), new(0.6f),0.2f);
@@ -250,6 +264,16 @@ namespace LSEngine
                 if (shaders[activeShader].GetUniform("model") != -1)
                 {
                     GL.UniformMatrix4(shaders[activeShader].GetUniform("model"), false, ref v.ModelMatrix);
+                }
+
+                if (shaders[activeShader].GetUniform("cameraPosition") != -1)
+                {
+                    GL.Uniform3(shaders[activeShader].GetUniform("cameraPosition"), ref cam.Position);
+                }
+
+                if (shaders[activeShader].GetUniform("farplane") != -1)
+                {
+                    GL.Uniform1(shaders[activeShader].GetUniform("farplane"),this.MaxRenderDistance);
                 }
 
                 if (shaders[activeShader].GetUniform("material_ambient") != -1)
@@ -395,36 +419,40 @@ namespace LSEngine
 
             dtime = (float)args.Time;
             time += dtime;
+            this.Title = $"LSEngine - Sponza | {(int)(1/dtime)} FPS, Current shader: {activeShader}";
             if (refreshCounter++ % maxRefresh == 0)
             {
-                List<Vector3> verts = new();
-                List<int> inds = new();
-                List<Vector3> colors = new();
-                List<Vector2> texcoords = new();
-                List<Vector3> normals = new();
-
-                // Assemble vertex and indice data for all volumes
-                int vertcount = 0;
-                foreach (RenderObject v in objects)
-                {
-                    verts.AddRange(v.GetVerts());
-                    inds.AddRange(v.GetIndices(vertcount));
-                    colors.AddRange(v.GetColorData());
-                    texcoords.AddRange(v.GetTextureCoords());
-                    normals.AddRange(v.GetNormals());
-                    vertcount += v.VertCount;
-                }
-
-                vertdata = verts.ToArray();
-                indicedata = inds.ToArray();
-                coldata = colors.ToArray();
-                texcoorddata = texcoords.ToArray();
-                normdata = normals.ToArray();
 
 #if PrintFPS
                 Console.WriteLine(1 / (dtime) + " FPS");
 #endif
+                if (objectsListHasChanged)
+                {
+                    List<Vector3> verts = new();
+                    List<int> inds = new();
+                    List<Vector3> colors = new();
+                    List<Vector2> texcoords = new();
+                    List<Vector3> normals = new();
 
+                    // Assemble vertex and indice data for all volumes
+                    int vertcount = 0;
+                    foreach (RenderObject v in objects)
+                    {
+                        verts.AddRange(v.GetVerts());
+                        inds.AddRange(v.GetIndices(vertcount));
+                        colors.AddRange(v.GetColorData());
+                        texcoords.AddRange(v.GetTextureCoords());
+                        normals.AddRange(v.GetNormals());
+                        vertcount += v.VertCount;
+                    }
+
+                    vertdata = verts.ToArray();
+                    indicedata = inds.ToArray();
+                    coldata = colors.ToArray();
+                    texcoorddata = texcoords.ToArray();
+                    normdata = normals.ToArray();
+                    objectsListHasChanged = false;
+                }
             }
 #if DebugPrints && DEBUG
             Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
@@ -583,10 +611,19 @@ namespace LSEngine
             {
                 cam.MoveSpeed = SceneSettings.CameraSettings.CameraSpeed;
             }
-            if (KeyboardState.IsKeyPressed(Keys.KeyPadAdd))
+            if (KeyboardState.IsKeyPressed(Keys.D0))
                 this.lights[0].AmbientIntensity += 0.1f;
-            if (KeyboardState.IsKeyPressed(Keys.KeyPadSubtract))
+            if (KeyboardState.IsKeyPressed(Keys.D9))
                 this.lights[0].AmbientIntensity -= 0.1f;
+
+            if (KeyboardState.IsKeyPressed(Keys.P))
+            {
+                activeShader = shadersList[currentShaderIndex++];
+                if (currentShaderIndex == shadersList.Count)
+                {
+                    currentShaderIndex = 0;
+                }
+            }
             if (IsFocused)
             {
                 Vector2 delta = lastMousePos - new Vector2(MouseState.X,MouseState.Y);
@@ -617,5 +654,17 @@ namespace LSEngine
             base.OnFocusedChanged(e);
             lastMousePos = new Vector2(MouseState.X, MouseState.Y);
         }
+
+        internal void PrintControls()
+        {
+            Console.WriteLine("Press Escape to close the window;");
+            Console.WriteLine("Press W, S, A, D, Space, LeftShift to move;");
+            Console.WriteLine("Press F for fulscreen mode;");
+            Console.WriteLine("Press L to print lights brightness;");
+            Console.WriteLine("Press 9 or 0 to increase/decrease the brightness;");
+            Console.WriteLine("Press P to switch between shaders;");
+        }
+
+
     }
 }
