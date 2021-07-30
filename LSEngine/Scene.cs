@@ -233,7 +233,7 @@ namespace LSEngine
             // 1. render depth of scene to texture (from light's perspective)
             // --------------------------------------------------------------
             Matrix4 lightProjection, lightView, lightSpaceMatrix;
-            float near_plane = 1.0f, far_plane = 7.5f;
+            float near_plane = -100.0f, far_plane = 100.5f;
             //lightProjection = glm::perspective(glm::radians(45.0f), (GLfloat)SHADOW_WIDTH / (GLfloat)SHADOW_HEIGHT, near_plane, far_plane); // note that if you use a perspective projection matrix you'll have to change the light position as the current light position isn't enough to reflect the whole scene
             lightProjection = Matrix4.CreateOrthographicOffCenter(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
             lightView = Matrix4.LookAt(lights[0].Position, new(0.0f), new(0.0f, 1.0f, 0.0f));
@@ -263,9 +263,6 @@ namespace LSEngine
             GL.ActiveTexture(TextureUnit.Texture0);
             GL.BindTexture(TextureTarget.Texture2D, depthMap);
             RenderScene("shaderShadow");
-
-            
-
             shaders[activeShader].DisableVertexAttribArrays();
             GL.Disable(EnableCap.Blend);
             GL.Flush();
