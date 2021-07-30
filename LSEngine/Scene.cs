@@ -41,6 +41,8 @@ namespace LSEngine
         int[] indicedata;
         int ibo_elements;
         int vao;
+        int depthMapFBO;
+        int depthMap;
 
 
         // if dynamically adding objects, check references of this boolean, you might want to change the use of it.
@@ -89,6 +91,23 @@ namespace LSEngine
             vao = GL.GenVertexArray();
             GL.BindVertexArray(vao);
 
+            depthMapFBO = GL.GenFramebuffer();
+            depthMap = GL.GenTexture();
+            GL.BindTexture(TextureTarget.Texture2D, depthMap);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent, 1024, 1024, 0, OpenTK.Graphics.OpenGL4.PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+
+
+            // attach depth texture as FBO's depth buffer
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, depthMapFBO);
+            GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, TextureTarget.Texture2D, depthMap, 0);
+            GL.DrawBuffer(DrawBufferMode.None);
+            GL.ReadBuffer(ReadBufferMode.None);
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+
             LoadResources();
 
             activeShader = "lit_advanced";
@@ -108,6 +127,10 @@ namespace LSEngine
             shadersList.Add("lit_advanced");
             shaders.Add("poor_mans_zBuffer", new("Shaders/vs_zBuffer.glsl", "Shaders/fs_zBuffer.glsl", true));
             shadersList.Add("poor_mans_zBuffer");
+            shaders.Add("simpleDepthShader", new("Shaders/vs_simpleDepthShader.glsl", "Shaders/fs_simpleDepthShader.glsl", true));
+            shadersList.Add("simpleDepthShader");
+            shaders.Add("shaderShadow", new("Shaders/vs_shaderShadow.glsl", "Shaders/fs_shaderShadow.glsl", true));
+            shadersList.Add("shaderShadow");
 
         }
 
@@ -192,16 +215,12 @@ namespace LSEngine
                 objects.Add(part);
             }
 
-            Light sunLight = new(new Vector3(0, 5, 0), new Vector3(1), 0.9f, 0.9f);
+            Light sunLight = new(new Vector3(0, 5, 0), new Vector3(1));
             sunLight.Type = LightType.Directional;
             sunLight.ConeAngle = 10f;
             sunLight.Direction = new Vector3(0, 1, 0).Normalized();
             lights.Add(sunLight);
 
-            //Light light = new(new(0,2,2), new(0.6f),0.2f);
-            //light.Type = LightType.Spot;
-            //light.Direction = new Vector3(0, 0, 1).Normalized();
-            //lights.Add(light);
 
         }
 
@@ -211,12 +230,53 @@ namespace LSEngine
             //GL.Viewport(0, 0, Size.X, Size.Y);
 
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            // 1. render depth of scene to texture (from light's perspective)
+            // --------------------------------------------------------------
+            Matrix4 lightProjection, lightView, lightSpaceMatrix;
+            float near_plane = 1.0f, far_plane = 7.5f;
+            //lightProjection = glm::perspective(glm::radians(45.0f), (GLfloat)SHADOW_WIDTH / (GLfloat)SHADOW_HEIGHT, near_plane, far_plane); // note that if you use a perspective projection matrix you'll have to change the light position as the current light position isn't enough to reflect the whole scene
+            lightProjection = Matrix4.CreateOrthographicOffCenter(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+            lightView = Matrix4.LookAt(lights[0].Position, new(0.0f), new(0.0f, 1.0f, 0.0f));
+            lightSpaceMatrix = lightProjection * lightView;
+            // render scene from light's point of view
 
+            GL.UseProgram(shaders["simpleDepthShader"].ProgramID);
+            GL.UniformMatrix4(shaders[activeShader].GetUniform("lightSpaceMatrix"), false, ref lightSpaceMatrix);
+            GL.Viewport(0, 0, 1024, 1024);
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, depthMapFBO);
+            GL.Clear(ClearBufferMask.DepthBufferBit);
+            RenderScene("simpleDepthShader");
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
 
+            // reset viewport
+            GL.Viewport(0, 0, Size.X, Size.Y);
+            GL.Clear(ClearBufferMask.ColorBufferBit| ClearBufferMask.DepthBufferBit);
 
-            GL.UseProgram(shaders[activeShader].ProgramID);
+            // 2. render scene as normal using the generated depth/shadow map  
+            // --------------------------------------------------------------
+            GL.Viewport(0, 0, Size.X, Size.Y);
+            GL.Clear(ClearBufferMask.ColorBufferBit| ClearBufferMask.DepthBufferBit);
+            GL.UseProgram(shaders["shaderShadow"].ProgramID);
+            Matrix4 projection = Matrix4.CreatePerspectiveOffCenter(-10,10,-10,10,0.1f, 100.0f);
+            Matrix4 view = cam.GetViewMatrix();
+            // set light uniforms
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, depthMap);
+            RenderScene("shaderShadow");
 
-            shaders[activeShader].EnableVertexAttribArrays();
+            
+
+            shaders[activeShader].DisableVertexAttribArrays();
+            GL.Disable(EnableCap.Blend);
+            GL.Flush();
+            SwapBuffers();
+        }
+
+        private void RenderScene(string shader)
+        {
+            GL.UseProgram(shaders[shader].ProgramID);
+
+            shaders[shader].EnableVertexAttribArrays();
 
             int indiceat = 0;
 
@@ -365,11 +425,6 @@ namespace LSEngine
                 GL.DrawElements(BeginMode.Triangles, v.IndiceCount, DrawElementsType.UnsignedInt, indiceat * sizeof(uint));
                 indiceat += v.IndiceCount;
             }
-
-            shaders[activeShader].DisableVertexAttribArrays();
-            GL.Disable(EnableCap.Blend);
-            GL.Flush();
-            SwapBuffers();
         }
 
         protected override void OnUpdateFrame(FrameEventArgs args)
