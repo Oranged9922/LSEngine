@@ -31,9 +31,6 @@ namespace LSEngine
             this.MinRenderDistance = s.CameraSettings.MinRenderDistance;
             this.MaxRenderDistance = s.CameraSettings.MaxRenderDistance;
         }
-#if DebugPrints && DEBUG
-        int debugIndex = 0;
-#endif
         #region Fields
         Vector3[] vertdata;
         Vector3[] coldata;
@@ -77,8 +74,6 @@ namespace LSEngine
             //Title = "LSEngine";
             GL.ClearColor(Color4.Gray);
             GL.Enable(EnableCap.DepthTest);
-            //GL.Enable(EnableCap.CullFace);
-            //GL.Enable(EnableCap.Texture2D);
             PrintControls();
             Console.WriteLine("Graphics card used: " + GL.GetString(StringName.Vendor) + ", GL version:" +  GL.GetString(StringName.Version));
         }
@@ -214,22 +209,13 @@ namespace LSEngine
         {
             base.OnRenderFrame(args);
             //GL.Viewport(0, 0, Size.X, Size.Y);
-#if DebugPrints && DEBUG
-            Console.WriteLine("OnRenderFrame"); debugIndex = 0;
-            Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-#if DebugPrints && DEBUG
-            Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
 
-#if DebugPrints && DEBUG
-            Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+
+
             GL.UseProgram(shaders[activeShader].ProgramID);
-#if DebugPrints && DEBUG
-            Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
+
             shaders[activeShader].EnableVertexAttribArrays();
 
             int indiceat = 0;
@@ -237,20 +223,14 @@ namespace LSEngine
             // Draw all objects
             foreach (RenderObject v in objects)
             {
-#if DebugPrints && DEBUG
-                Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
+
 
                 GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
                 GL.Enable(EnableCap.Blend);
                 GL.BindTexture(TextureTarget.Texture2D, v.TextureID);
-#if DebugPrints && DEBUG
-                Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
+
                 GL.UniformMatrix4(shaders[activeShader].GetUniform("modelview"), false, ref v.ModelViewProjectionMatrix);
-#if DebugPrints && DEBUG
-                Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
+
                 if (shaders[activeShader].GetAttribute("maintexture") != -1)
                 {
                     GL.Uniform1(shaders[activeShader].GetAttribute("maintexture"), v.TextureID);
@@ -295,9 +275,6 @@ namespace LSEngine
                 {
                     GL.Uniform1(shaders[activeShader].GetUniform("material_specExponent"), v.Material.SpecularExponent);
                 }
-#if DebugPrints && DEBUG
-                Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
 
                 if (shaders[activeShader].GetUniform("map_specular") != -1)
                 {
@@ -336,9 +313,6 @@ namespace LSEngine
                     GL.Uniform1(shaders[activeShader].GetUniform("light_ambientIntensity"), lights[0].AmbientIntensity);
                 }
 
-#if DebugPrints && DEBUG
-                Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
 
                 for (int i = 0; i < Math.Min(lights.Count, MAX_LIGHTS); i++)
                 {
@@ -387,13 +361,7 @@ namespace LSEngine
                         GL.Uniform1(shaders[activeShader].GetUniform("lights[" + i + "].quadraticAttenuation"), lights[i].QuadraticAttenuation);
                     }
                 }
-#if DebugPrints && DEBUG
-                Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
-                //GL.DrawArrays(PrimitiveType.Triangles, indiceat, v.IndiceCount);
-#if DebugPrints && DEBUG
-                Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
+
                 GL.DrawElements(BeginMode.Triangles, v.IndiceCount, DrawElementsType.UnsignedInt, indiceat * sizeof(uint));
                 indiceat += v.IndiceCount;
             }
@@ -407,14 +375,8 @@ namespace LSEngine
         protected override void OnUpdateFrame(FrameEventArgs args)
         {
             base.OnUpdateFrame(args);
-#if DebugPrints && DEBUG
-            Console.WriteLine("OnUpdateFrame"); debugIndex = 0;
-            Console.WriteLine(debugIndex + "|" + GL.GetError());debugIndex++;
-#endif
+
             ProcessInput();
-#if DebugPrints && DEBUG
-            Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
 
 
             dtime = (float)args.Time;
@@ -454,69 +416,39 @@ namespace LSEngine
                     objectsListHasChanged = false;
                 }
             }
-#if DebugPrints && DEBUG
-            Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
             GL.BindBuffer(BufferTarget.ArrayBuffer, shaders[activeShader].GetBuffer("vPosition"));
-#if DebugPrints && DEBUG
-            Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
             GL.BufferData<Vector3>(BufferTarget.ArrayBuffer, (IntPtr)(vertdata.Length * Vector3.SizeInBytes), vertdata, BufferUsageHint.StaticDraw);
-#if DebugPrints && DEBUG
-            Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
             GL.VertexAttribPointer(shaders[activeShader].GetAttribute("vPosition"),3, VertexAttribPointerType.Float, false, 0, IntPtr.Zero);
-#if DebugPrints && DEBUG
-            Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
+
             // Buffer vertex color if shader supports it
             if (shaders[activeShader].GetAttribute("vColor") != -1)
             {
                 GL.BindBuffer(BufferTarget.ArrayBuffer, shaders[activeShader].GetBuffer("vColor"));
                 GL.BufferData<Vector3>(BufferTarget.ArrayBuffer, (IntPtr)(coldata.Length * Vector3.SizeInBytes), coldata, BufferUsageHint.StaticDraw);
-#if DebugPrints && DEBUG
-                Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
+
                 GL.VertexAttribPointer(shaders[activeShader].GetAttribute("vColor"), 3, VertexAttribPointerType.Float, true, 0, 0);
-#if DebugPrints && DEBUG
-                Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
+
             }
-#if DebugPrints && DEBUG
-            Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
+
 
             // Buffer texture coordinates if shader supports it
             if (shaders[activeShader].GetAttribute("texcoord") != -1)
             {
                 GL.BindBuffer(BufferTarget.ArrayBuffer, shaders[activeShader].GetBuffer("texcoord"));
                 GL.BufferData<Vector2>(BufferTarget.ArrayBuffer, (IntPtr)(texcoorddata.Length * Vector2.SizeInBytes), texcoorddata, BufferUsageHint.StaticDraw);
-#if DebugPrints && DEBUG
-                Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
+
                 GL.VertexAttribPointer(shaders[activeShader].GetAttribute("texcoord"), 2, VertexAttribPointerType.Float, true, 0, 0);
-#if DebugPrints && DEBUG
-                Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
+
             }
-#if DebugPrints && DEBUG
-            Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
+
             if (shaders[activeShader].GetAttribute("vNormal") != -1)
             {
                 GL.BindBuffer(BufferTarget.ArrayBuffer, shaders[activeShader].GetBuffer("vNormal"));
                 GL.BufferData<Vector3>(BufferTarget.ArrayBuffer, (IntPtr)(normdata.Length * Vector3.SizeInBytes), normdata, BufferUsageHint.StaticDraw);
                 GL.VertexAttribPointer(shaders[activeShader].GetAttribute("vNormal"), 3, VertexAttribPointerType.Float, true, 0, 0);
             }
-#if DebugPrints && DEBUG
-            Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
             // Update object positions
 
-
-#if DebugPrints && DEBUG
-            Console.WriteLine(time);
-#endif
 
             // Update model view matrices
             foreach (RenderObject v in objects)
@@ -525,9 +457,7 @@ namespace LSEngine
                 v.ViewProjectionMatrix = cam.GetViewMatrix() * Matrix4.CreatePerspectiveFieldOfView(1.3f, ClientSize.X / (float)ClientSize.Y, MinRenderDistance, MaxRenderDistance);
                 v.ModelViewProjectionMatrix = v.ModelMatrix * v.ViewProjectionMatrix;
             }
-#if DebugPrints && DEBUG
-            Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
+
             GL.UseProgram(shaders[activeShader].ProgramID);
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
@@ -535,9 +465,7 @@ namespace LSEngine
             // Buffer index data
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, ibo_elements);
             GL.BufferData(BufferTarget.ElementArrayBuffer, (IntPtr)(indicedata.Length * sizeof(int)), indicedata, BufferUsageHint.StaticDraw);
-#if DebugPrints && DEBUG
-            Console.WriteLine(debugIndex + "|" + GL.GetError()); debugIndex++;
-#endif
+
             view = cam.GetViewMatrix();
         }
 
@@ -551,49 +479,37 @@ namespace LSEngine
             if (KeyboardState.IsKeyDown(Keys.W))
             {
                 cam.Move(0f, 0.1f, 0f);
-#if DebugPrints && DEBUG
-                Console.WriteLine("W  was pressed");
-#endif
+
             }
 
             if (KeyboardState.IsKeyDown(Keys.S))
             {
                 cam.Move(0f, -0.1f, 0f);
-#if DebugPrints && DEBUG
-                Console.WriteLine("S  was pressed");
-#endif
+
             }
 
                 if (KeyboardState.IsKeyDown(Keys.A))
             {
                 cam.Move(-0.1f, 0f, 0f);
-#if DebugPrints && DEBUG
-                Console.WriteLine("A  was pressed");
-#endif
+
             }
 
             if (KeyboardState.IsKeyDown(Keys.D))
             {
                 cam.Move(0.1f, 0f, 0f);
-#if DebugPrints && DEBUG
-                Console.WriteLine("D  was pressed");
-#endif
+
             }
 
             if (KeyboardState.IsKeyDown(Keys.Space))
             {
                 cam.Move(0f, 0f, 0.1f);
-#if DebugPrints && DEBUG
-                Console.WriteLine("Q  was pressed");
-#endif
+
             }
 
             if (KeyboardState.IsKeyDown(Keys.LeftShift))
             {
                 cam.Move(0f, 0f, -0.1f);
-#if DebugPrints && DEBUG
-                Console.WriteLine("E  was pressed");
-#endif
+
             }
             if (KeyboardState.IsKeyPressed(Keys.F))
             {
@@ -630,12 +546,7 @@ namespace LSEngine
                 lastMousePos += delta;
 
                 cam.AddRotation(delta.X, delta.Y);
-#if DebugPrints && DEBUG
-                Console.WriteLine("Camera position:");
-                Console.WriteLine(cam.Position);
-                Console.WriteLine("Camera orientation:");
-                Console.WriteLine(cam.Orientation);
-#endif
+
                 lastMousePos = new Vector2(MouseState.X, MouseState.Y);
             }
 
