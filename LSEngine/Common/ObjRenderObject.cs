@@ -421,9 +421,7 @@ namespace LSEngine.Common
 
         public override bool InView(Vector3 camLookAt, float fov)
         {
-            foreach (var part in Parts)
-            {
-                Vector3[] vertices = part.GetVerts();
+                Vector3[] vertices = GetVerts();
                 foreach (var vertex in vertices)
                 {
                     if(fov+0.2 < Vector3.CalculateAngle(vertex, camLookAt))
@@ -431,7 +429,6 @@ namespace LSEngine.Common
                         return false;
                     }
                 }
-            }
             return true;
         }
 

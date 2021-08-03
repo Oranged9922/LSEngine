@@ -109,6 +109,10 @@ namespace LSEngine
             shadersList.Add("lit_advanced");
             shaders.Add("poor_mans_zBuffer", new("Shaders/vs_zBuffer.glsl", "Shaders/fs_zBuffer.glsl", true));
             shadersList.Add("poor_mans_zBuffer");
+            shaders.Add("shader_shadow", new("Shaders/vs_shaderShadow.glsl", "Shaders/fs_shaderShadow.glsl", true));
+            shadersList.Add("shader_shadow");
+            shaders.Add("simpleDepthShader", new("Shaders/vs_simpleDepthShader.glsl", "Shaders/fs_simpleDepthShader.glsl", true));
+            shadersList.Add("simpleDepthShader");
 
         }
 
@@ -220,12 +224,20 @@ namespace LSEngine
             // Draw all objects
             foreach (RenderObject v in objects)
             {
+                //if (!v.InView(cam.LookAt, 0.5f))
+                //{
+                //    indiceat += v.IndiceCount;
+                //    continue;
+                //}
                 GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
                 GL.Enable(EnableCap.Blend);
                 GL.BindTexture(TextureTarget.Texture2D, v.TextureID);
-
                 GL.UniformMatrix4(shaders[activeShader].GetUniform("modelview"), false, ref v.ModelViewProjectionMatrix);
-
+                
+                if (shaders[activeShader].GetAttribute("lightSpaceMatrix") != -1)
+                {
+                    GL.Uniform1(shaders[activeShader].GetAttribute("lightSpaceMatrix"), GetLightSpaceMatrix(lights[0]));
+                }
                 if (shaders[activeShader].GetAttribute("maintexture") != -1)
                 {
                     GL.Uniform1(shaders[activeShader].GetAttribute("maintexture"), v.TextureID);
@@ -364,6 +376,12 @@ namespace LSEngine
             shaders[activeShader].DisableVertexAttribArrays();
 
         }
+
+        private double GetLightSpaceMatrix(Light light)
+        {
+            throw new NotImplementedException();
+        }
+
         protected override void OnRenderFrame(FrameEventArgs args)
         {
             base.OnRenderFrame(args);
