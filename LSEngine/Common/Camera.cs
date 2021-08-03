@@ -13,6 +13,7 @@ namespace LSEngine.Common
         public Vector3 Orientation = new((float)Math.PI/2, 0f, 0f);
         public float MoveSpeed = 0.2f;
         public float MouseSensitivity = 0.01f;
+        public Vector3 LookAt = new(0,0,1);
 
         
         public Matrix4 GetViewMatrix()
@@ -22,7 +23,7 @@ namespace LSEngine.Common
             lookat.X = (float)(Math.Sin((float)Orientation.X) * Math.Cos((float)Orientation.Y));
             lookat.Y = (float)Math.Sin((float)Orientation.Y);
             lookat.Z = (float)(Math.Cos((float)Orientation.X) * Math.Cos((float)Orientation.Y));
-
+            LookAt = lookat;
             return Matrix4.LookAt(Position, Position + lookat, Vector3.UnitY);
         }
 

@@ -65,6 +65,8 @@ namespace LSEngine.Common
 
             Normals = normals;
         }
+
+        public abstract bool InView(Vector3 camLookAt, float fov);
     }
 
 }

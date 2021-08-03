@@ -419,6 +419,22 @@ namespace LSEngine.Common
             return newObject;
         }
 
+        public override bool InView(Vector3 camLookAt, float fov)
+        {
+            foreach (var part in Parts)
+            {
+                Vector3[] vertices = part.GetVerts();
+                foreach (var vertex in vertices)
+                {
+                    if(fov+0.2 < Vector3.CalculateAngle(vertex, camLookAt))
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
         private class TempVertex
         {
             public int Vertex;

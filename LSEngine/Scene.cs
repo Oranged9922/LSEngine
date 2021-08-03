@@ -64,6 +64,7 @@ namespace LSEngine
         float time = 0.0f;
         float dtime = 0.0f;
         int refreshCounter = 0;
+        float fov = 1.3f;
         const int maxRefresh = 60;
         #endregion
 
@@ -204,12 +205,8 @@ namespace LSEngine
             //lights.Add(light);
 
         }
-
-        protected override void OnRenderFrame(FrameEventArgs args)
+        void RenderScene(string activeShader)
         {
-            base.OnRenderFrame(args);
-            //GL.Viewport(0, 0, Size.X, Size.Y);
-
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
 
@@ -223,8 +220,6 @@ namespace LSEngine
             // Draw all objects
             foreach (RenderObject v in objects)
             {
-
-
                 GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
                 GL.Enable(EnableCap.Blend);
                 GL.BindTexture(TextureTarget.Texture2D, v.TextureID);
@@ -236,7 +231,7 @@ namespace LSEngine
                     GL.Uniform1(shaders[activeShader].GetAttribute("maintexture"), v.TextureID);
                 }
 
-                    if (shaders[activeShader].GetUniform("view") != -1)
+                if (shaders[activeShader].GetUniform("view") != -1)
                 {
                     GL.UniformMatrix4(shaders[activeShader].GetUniform("view"), false, ref view);
                 }
@@ -253,7 +248,7 @@ namespace LSEngine
 
                 if (shaders[activeShader].GetUniform("farplane") != -1)
                 {
-                    GL.Uniform1(shaders[activeShader].GetUniform("farplane"),this.MaxRenderDistance);
+                    GL.Uniform1(shaders[activeShader].GetUniform("farplane"), this.MaxRenderDistance);
                 }
 
                 if (shaders[activeShader].GetUniform("material_ambient") != -1)
@@ -367,6 +362,15 @@ namespace LSEngine
             }
 
             shaders[activeShader].DisableVertexAttribArrays();
+
+        }
+        protected override void OnRenderFrame(FrameEventArgs args)
+        {
+            base.OnRenderFrame(args);
+            //GL.Viewport(0, 0, Size.X, Size.Y);
+
+            RenderScene(activeShader);
+            RenderScene(activeShader);
             GL.Disable(EnableCap.Blend);
             GL.Flush();
             SwapBuffers();
@@ -454,7 +458,7 @@ namespace LSEngine
             foreach (RenderObject v in objects)
             {
                 v.CalculateModelMatrix();
-                v.ViewProjectionMatrix = cam.GetViewMatrix() * Matrix4.CreatePerspectiveFieldOfView(1.3f, ClientSize.X / (float)ClientSize.Y, MinRenderDistance, MaxRenderDistance);
+                v.ViewProjectionMatrix = cam.GetViewMatrix() * Matrix4.CreatePerspectiveFieldOfView(fov, ClientSize.X / (float)ClientSize.Y, MinRenderDistance, MaxRenderDistance);
                 v.ModelViewProjectionMatrix = v.ModelMatrix * v.ViewProjectionMatrix;
             }
 
