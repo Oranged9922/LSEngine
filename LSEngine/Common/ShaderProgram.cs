@@ -21,6 +21,8 @@ namespace LSEngine.Common
 
         public ShaderProgram(string vs, string fs, bool fromFile = false)
         {
+            Console.WriteLine($"creating {vs} / {fs} shader");
+
             ProgramID = GL.CreateProgram();
 
             if (fromFile)
@@ -57,7 +59,8 @@ namespace LSEngine.Common
             GL.ShaderSource(address, code);
             GL.CompileShader(address);
             GL.AttachShader(ProgramID, address);
-            Console.WriteLine(GL.GetShaderInfoLog(address));
+            string log = GL.GetShaderInfoLog(address);
+            if (log != "") Console.WriteLine(log);
         }
 
         private void LoadShaderFromFile(string filename , ShaderType type)

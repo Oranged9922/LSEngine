@@ -42,6 +42,10 @@ namespace LSEngine
         int ibo_elements;
         int vao;
 
+        int frameBufferName;
+        int renderedTexture;
+        int depthRenderBuffer;
+
 
         // if dynamically adding objects, check references of this boolean, you might want to change the use of it.
         public bool objectsListHasChanged = true;
@@ -87,6 +91,24 @@ namespace LSEngine
             cam.MouseSensitivity = 0.025f;
             cam.MoveSpeed = 2;
             ibo_elements = GL.GenBuffer();
+            frameBufferName = GL.GenBuffer();
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, frameBufferName);
+            renderedTexture = GL.GenTexture();
+            GL.BindTexture(TextureTarget.Texture2D, renderedTexture);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgb, ClientSize.X, ClientSize.Y, 0, OpenTK.Graphics.OpenGL4.PixelFormat.Rgb, PixelType.UnsignedByte, IntPtr.Zero);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Nearest);
+
+
+            depthRenderBuffer = GL.GenRenderbuffer();
+            GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, depthRenderBuffer);
+            GL.RenderbufferStorage(RenderbufferTarget.Renderbuffer, RenderbufferStorage.DepthComponent, ClientSize.X, ClientSize.Y);
+            GL.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, RenderbufferTarget.Renderbuffer, depthRenderBuffer);
+            GL.FramebufferTexture(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, renderedTexture, 0);
+
+            GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
+            if (GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete) Console.WriteLine("OOh");
+
             vao = GL.GenVertexArray();
             GL.BindVertexArray(vao);
 
@@ -112,6 +134,7 @@ namespace LSEngine
             shadersList.Add("poor_mans_zBuffer");
             shaders.Add("shader_shadow", new("Shaders/vs_shaderShadow.glsl", "Shaders/fs_shaderShadow.glsl", true));
             shadersList.Add("shader_shadow");
+            
             shaders.Add("simpleDepthShader", new("Shaders/vs_simpleDepthShader.glsl", "Shaders/fs_simpleDepthShader.glsl", true));
             shadersList.Add("simpleDepthShader");
 
@@ -198,7 +221,7 @@ namespace LSEngine
                 objects.Add(part);
             }
 
-            Light sunLight = new(new Vector3(-1000, 3000, -1000), new Vector3(1), 0.9f, 0.9f);
+            Light sunLight = new(new Vector3(-100, 2000, -100), new Vector3(1), 0.9f, 0.9f);
             sunLight.Type = LightType.Spot;
             sunLight.ConeAngle = 15f;
             sunLight.Direction = new Vector3(1,-1.75f,-1).Normalized();
@@ -210,11 +233,11 @@ namespace LSEngine
             //lights.Add(light);
 
 
-            Console.WriteLine(cam.Position);
-            Console.WriteLine(cam.Orientation);
-            Console.WriteLine("lightSource");
-            Console.WriteLine(sunLight.Position);
-            Console.WriteLine(sunLight.Direction);
+            //Console.WriteLine(cam.Position);
+            //Console.WriteLine(cam.Orientation);
+            //Console.WriteLine("lightSource");
+            //Console.WriteLine(sunLight.Position);
+            //Console.WriteLine(sunLight.Direction);
         }
         void RenderScene(string activeShader)
         {
@@ -248,6 +271,15 @@ namespace LSEngine
 
                     GL.UniformMatrix4(shaders[activeShader].GetUniform("lightSpaceMatrix"), false, ref lights[0].ModelViewProjectionMatrix);
                 }
+
+                if (shaders[activeShader].GetUniform("viewprojectionLight") != -1)
+                {
+                    GetLightSpaceMatrix(lights[0]);
+                    lights[0].ModelViewProjectionMatrix = v.ModelMatrix * lights[0].ViewProjectionMatrix;
+
+                    GL.UniformMatrix4(shaders[activeShader].GetUniform("viewprojectionLight"), false, ref lights[0].ViewProjectionMatrix);
+                }
+
                 if (shaders[activeShader].GetAttribute("maintexture") != -1)
                 {
                     GL.Uniform1(shaders[activeShader].GetAttribute("maintexture"), v.TextureID);
@@ -282,6 +314,10 @@ namespace LSEngine
                 {
                     GL.Uniform3(shaders[activeShader].GetUniform("material_diffuse"), ref v.Material.DiffuseColor);
                 }
+                if (shaders[activeShader].GetUniform("diffuseTexture") != -1)
+                {
+                    GL.Uniform3(shaders[activeShader].GetUniform("diffuseTexture"), ref v.Material.DiffuseColor);
+                }
 
                 if (shaders[activeShader].GetUniform("material_specular") != -1)
                 {
@@ -293,6 +329,20 @@ namespace LSEngine
                     GL.Uniform1(shaders[activeShader].GetUniform("material_specExponent"), v.Material.SpecularExponent);
                 }
 
+                if (shaders[activeShader].GetUniform("shadowMap") != -1)
+                {
+                    if (v.Material.SpecularMap != "")
+                    {
+                        GL.ActiveTexture(TextureUnit.Texture1);
+                        GL.BindTexture(TextureTarget.Texture2D, renderedTexture);
+                        GL.Uniform1(shaders[activeShader].GetUniform("shadowMap"), 1);
+                        GL.ActiveTexture(TextureUnit.Texture0);
+                    }
+                    else // Object has no specular map
+                    {
+                        GL.Uniform1(shaders[activeShader].GetUniform("hasSpecularMap"), 0);
+                    }
+                }
                 if (shaders[activeShader].GetUniform("map_specular") != -1)
                 {
                     // Object has a specular map
@@ -313,6 +363,14 @@ namespace LSEngine
                 if (shaders[activeShader].GetUniform("light_position") != -1)
                 {
                     GL.Uniform3(shaders[activeShader].GetUniform("light_position"), ref lights[0].Position);
+                }
+                if (shaders[activeShader].GetUniform("lightPos") != -1)
+                {
+                    GL.Uniform3(shaders[activeShader].GetUniform("lightPos"), ref lights[0].Position);
+                }
+                if (shaders[activeShader].GetUniform("viewPos") != -1)
+                {
+                    GL.Uniform3(shaders[activeShader].GetUniform("viewPos"), ref cam.Position);
                 }
 
                 if (shaders[activeShader].GetUniform("light_color") != -1)
@@ -398,9 +456,11 @@ namespace LSEngine
             base.OnRenderFrame(args);
             //GL.Viewport(0, 0, Size.X, Size.Y);
 
+            //Console.WriteLine("Rendering using simpleDepthShader");
             //save this as shadow texture
-            RenderScene(activeShader);
+            RenderScene("simpleDepthShader");
 
+            //Console.WriteLine("Rendering using activeShader");
             // use shadow texture and render normally;
             RenderScene(activeShader);
             GL.Disable(EnableCap.Blend);
@@ -418,6 +478,11 @@ namespace LSEngine
             dtime = (float)args.Time;
             time += dtime;
             this.Title = $"LSEngine - Sponza | {(int)(1/dtime)} FPS, Current shader: {activeShader}";
+
+
+            //light moving
+            //lights[0].Direction += new Vector3(0, 0, 0);
+
             if (refreshCounter++ % maxRefresh == 0)
             {
 
@@ -576,6 +641,14 @@ namespace LSEngine
                     currentShaderIndex = 0;
                 }
             }
+
+            //light move
+            if (KeyboardState.IsKeyDown(Keys.U))
+            {
+                lights[0].Direction += new Vector3(0f, 0.1f,0f);
+
+            }
+
             if (IsFocused)
             {
                 Vector2 delta = lastMousePos - new Vector2(MouseState.X,MouseState.Y);
