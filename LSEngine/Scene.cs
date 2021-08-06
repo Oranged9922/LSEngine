@@ -93,8 +93,9 @@ namespace LSEngine
             LoadResources();
 
             activeShader = "lit_advanced";
+            
+            cam.Position += new Vector3(0.0f, 5.0f, 0.0f);
             SetupScene();
-            cam.Position += new Vector3(0.0f, 1.0f, 0.0f);
         }
 
         private void LoadResources()
@@ -198,9 +199,9 @@ namespace LSEngine
             }
 
             Light sunLight = new(new Vector3(0, 5, 0), new Vector3(1), 0.9f, 0.9f);
-            sunLight.Type = LightType.Directional;
-            sunLight.ConeAngle = 10f;
-            sunLight.Direction = new Vector3(0, 1, 0).Normalized();
+            sunLight.Type = LightType.Spot;
+            sunLight.ConeAngle = 15f;
+            sunLight.Direction = new Vector3((float)Math.PI/2,0,0);
             lights.Add(sunLight);
 
             //Light light = new(new(0,2,2), new(0.6f),0.2f);
@@ -208,6 +209,12 @@ namespace LSEngine
             //light.Direction = new Vector3(0, 0, 1).Normalized();
             //lights.Add(light);
 
+
+            Console.WriteLine(cam.Position);
+            Console.WriteLine(cam.Orientation);
+            Console.WriteLine("lightSource");
+            Console.WriteLine(sunLight.Position);
+            Console.WriteLine(sunLight.Direction);
         }
         void RenderScene(string activeShader)
         {
@@ -234,9 +241,12 @@ namespace LSEngine
                 GL.BindTexture(TextureTarget.Texture2D, v.TextureID);
                 GL.UniformMatrix4(shaders[activeShader].GetUniform("modelview"), false, ref v.ModelViewProjectionMatrix);
                 
-                if (shaders[activeShader].GetAttribute("lightSpaceMatrix") != -1)
+                if (shaders[activeShader].GetUniform("lightSpaceMatrix") != -1)
                 {
-                    GL.Uniform1(shaders[activeShader].GetAttribute("lightSpaceMatrix"), GetLightSpaceMatrix(lights[0]));
+                    GetLightSpaceMatrix(lights[0]);
+                    lights[0].ModelViewProjectionMatrix = v.ModelMatrix * lights[0].ViewProjectionMatrix;
+
+                    GL.UniformMatrix4(shaders[activeShader].GetUniform("lightSpaceMatrix"), false, ref lights[0].ModelViewProjectionMatrix);
                 }
                 if (shaders[activeShader].GetAttribute("maintexture") != -1)
                 {
@@ -377,9 +387,10 @@ namespace LSEngine
 
         }
 
-        private double GetLightSpaceMatrix(Light light)
+        private Matrix4 GetLightSpaceMatrix(Light light)
         {
-            throw new NotImplementedException();
+            light.ViewProjectionMatrix = light.GetViewMatrix() * Matrix4.CreatePerspectiveFieldOfView(fov, ClientSize.X / (float)ClientSize.Y, MinRenderDistance, MaxRenderDistance);
+            return light.ViewProjectionMatrix;
         }
 
         protected override void OnRenderFrame(FrameEventArgs args)

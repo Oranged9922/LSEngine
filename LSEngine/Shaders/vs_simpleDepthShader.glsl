@@ -2,9 +2,10 @@
 layout (location = 0) in vec3 vPosition;
 
 uniform mat4 lightSpaceMatrix;
-uniform mat4 model;
+out vec4 color;
 
 void main()
 {
-    gl_Position = lightSpaceMatrix * model * vec4(vPosition, 1.0);
+    gl_Position = lightSpaceMatrix *  vec4(vPosition, 1.0);
+    color = gl_Position;
 }

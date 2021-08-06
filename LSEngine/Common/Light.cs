@@ -34,6 +34,9 @@ namespace LSEngine.Common
        
         public float AmbientIntensity;
 
+        public Vector3 LookAt;
+
+        public Matrix4 ViewProjectionMatrix;
        
         public LightType Type;
 
@@ -48,6 +51,19 @@ namespace LSEngine.Common
 
         
         public float QuadraticAttenuation;
+
+        public Matrix4 ModelViewProjectionMatrix;
+
+        internal Matrix4 GetViewMatrix()
+        {
+            Vector3 lookat = new();
+
+            lookat.X = (float)(Math.Sin((float)Direction.X) * Math.Cos((float)Direction.Y));
+            lookat.Y = (float)Math.Sin((float)Direction.Y);
+            lookat.Z = (float)(Math.Cos((float)Direction.X) * Math.Cos((float)Direction.Y));
+            LookAt = lookat;
+            return Matrix4.LookAt(Position, Position + lookat, Vector3.UnitY);
+        }
     }
 
     
