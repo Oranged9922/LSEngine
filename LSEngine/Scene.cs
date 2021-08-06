@@ -222,7 +222,7 @@ namespace LSEngine
             }
 
             Light sunLight = new(new Vector3(-100, 2000, -100), new Vector3(1), 0.9f, 0.9f);
-            sunLight.Type = LightType.Spot;
+            sunLight.Type = LightType.Point;
             sunLight.ConeAngle = 15f;
             sunLight.Direction = new Vector3(1,-1.75f,-1).Normalized();
             lights.Add(sunLight);
@@ -683,6 +683,7 @@ namespace LSEngine
             Console.WriteLine("Press L to print lights brightness;");
             Console.WriteLine("Press 9 or 0 to increase/decrease the brightness;");
             Console.WriteLine("Press P to switch between shaders;");
+            Console.WriteLine("Press U to change light direction;");
         }
 
 
