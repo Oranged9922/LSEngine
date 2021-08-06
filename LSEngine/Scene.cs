@@ -222,7 +222,7 @@ namespace LSEngine
             }
 
             Light sunLight = new(new Vector3(-100, 2000, -100), new Vector3(1), 0.9f, 0.9f);
-            sunLight.Type = LightType.Point;
+            sunLight.Type = LightType.Directional;
             sunLight.ConeAngle = 15f;
             sunLight.Direction = new Vector3(1,-1.75f,-1).Normalized();
             lights.Add(sunLight);
