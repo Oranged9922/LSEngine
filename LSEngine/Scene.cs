@@ -114,7 +114,7 @@ namespace LSEngine
 
             LoadResources();
 
-            activeShader = "lit_advanced";
+            activeShader = "shader_shadow";
             
             cam.Position += new Vector3(0.0f, 5.0f, 0.0f);
             SetupScene();
