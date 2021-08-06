@@ -198,10 +198,10 @@ namespace LSEngine
                 objects.Add(part);
             }
 
-            Light sunLight = new(new Vector3(0, 5, 0), new Vector3(1), 0.9f, 0.9f);
+            Light sunLight = new(new Vector3(-1000, 3000, -1000), new Vector3(1), 0.9f, 0.9f);
             sunLight.Type = LightType.Spot;
             sunLight.ConeAngle = 15f;
-            sunLight.Direction = new Vector3((float)Math.PI/2,0,0);
+            sunLight.Direction = new Vector3(1,-1.75f,-1).Normalized();
             lights.Add(sunLight);
 
             //Light light = new(new(0,2,2), new(0.6f),0.2f);
@@ -398,7 +398,10 @@ namespace LSEngine
             base.OnRenderFrame(args);
             //GL.Viewport(0, 0, Size.X, Size.Y);
 
+            //save this as shadow texture
             RenderScene(activeShader);
+
+            // use shadow texture and render normally;
             RenderScene(activeShader);
             GL.Disable(EnableCap.Blend);
             GL.Flush();
