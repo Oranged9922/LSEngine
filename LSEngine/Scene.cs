@@ -91,9 +91,6 @@ namespace LSEngine
             cam.MouseSensitivity = 0.025f;
             cam.MoveSpeed = 2;
             ibo_elements = GL.GenBuffer();
-
-
-            // shadow texture creation
             frameBufferName = GL.GenBuffer();
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, frameBufferName);
             renderedTexture = GL.GenTexture();
@@ -137,6 +134,7 @@ namespace LSEngine
             shadersList.Add("poor_mans_zBuffer");
             shaders.Add("shader_shadow", new("Shaders/vs_shaderShadow.glsl", "Shaders/fs_shaderShadow.glsl", true));
             shadersList.Add("shader_shadow");
+            
             shaders.Add("simpleDepthShader", new("Shaders/vs_simpleDepthShader.glsl", "Shaders/fs_simpleDepthShader.glsl", true));
             shadersList.Add("simpleDepthShader");
 
@@ -277,6 +275,7 @@ namespace LSEngine
                 if (shaders[activeShader].GetUniform("viewprojectionLight") != -1)
                 {
                     GetLightSpaceMatrix(lights[0]);
+                    lights[0].ModelViewProjectionMatrix = v.ModelMatrix * lights[0].ViewProjectionMatrix;
 
                     GL.UniformMatrix4(shaders[activeShader].GetUniform("viewprojectionLight"), false, ref lights[0].ViewProjectionMatrix);
                 }
@@ -448,8 +447,7 @@ namespace LSEngine
 
         private Matrix4 GetLightSpaceMatrix(Light light)
         {
-            light.ViewProjectionMatrix = light.GetViewMatrix() *
-                Matrix4.CreatePerspectiveFieldOfView(fov, ClientSize.X / (float)ClientSize.Y, MinRenderDistance, MaxRenderDistance);
+            light.ViewProjectionMatrix = light.GetViewMatrix() * Matrix4.CreatePerspectiveFieldOfView(fov, ClientSize.X / (float)ClientSize.Y, MinRenderDistance, MaxRenderDistance);
             return light.ViewProjectionMatrix;
         }
 

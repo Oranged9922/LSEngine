@@ -45,7 +45,7 @@ main()
 	// Texture information
 	vec2 flipped_texcoord = vec2(f_texcoord.x, 1.0 - f_texcoord.y);
 	vec4 texcolor = texture2D(maintexture, flipped_texcoord.xy);
-	if (texcolor.a < 0.5) discard;
+
 	vec3 n = normalize(v_norm);
 	
 	// Loop through lights, adding the lighting from each one
