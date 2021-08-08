@@ -74,7 +74,7 @@ namespace LSEngine.Common
                 }
 
                 // Add final material
-                if (currentmat.Count((char c) => c == '\n') > 0)
+                if (currentmat.Any((char c) => c == '\n'))
                 {
                     Material newMat = new();
 
@@ -109,7 +109,7 @@ namespace LSEngine.Common
             if (lines.Count != 0)
             {
                
-                name = lines[0].Substring("newmtl ".Length);
+                name = lines[0]["newmtl ".Length..];
             }
 
             
@@ -127,7 +127,7 @@ namespace LSEngine.Common
                
                 if (line.StartsWith("Ka"))
                 {
-                    string[] colorparts = line.Substring(3).Split(' ');
+                    string[] colorparts = line[3..].Split(' ');
 
                     
                     if (colorparts.Length < 3)

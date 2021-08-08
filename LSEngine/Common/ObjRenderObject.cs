@@ -24,7 +24,7 @@ namespace LSEngine.Common
 
     class ObjRenderObject : RenderObject
     {
-        private List<Tuple<FaceVertex, FaceVertex, FaceVertex>> faces = new();
+        private readonly List<Tuple<FaceVertex, FaceVertex, FaceVertex>> faces = new();
 
         public override int VertCount { get { return faces.Count * 3; } }
 
