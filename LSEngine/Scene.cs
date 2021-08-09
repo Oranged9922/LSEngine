@@ -223,6 +223,7 @@ namespace LSEngine
                 objects.Add(part);
             }
 
+            Light sunLight = new(new Vector3(10, 20, 0), new Vector3(1), 0.9f, 0.9f);
             sunLight.Type = LightType.Directional;
             sunLight.Direction = new Vector3(1,0,0).Normalized();
             lights.Add(sunLight);
