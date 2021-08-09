@@ -270,7 +270,7 @@ namespace LSEngine
                     GetLightSpaceMatrix(lights[0]);
                     lights[0].ModelViewProjectionMatrix = v.ModelMatrix * lights[0].ViewProjectionMatrix;
 
-                    GL.UniformMatrix4(shaders[activeShader].GetUniform("lightSpaceMatrix"), false, ref lights[0].ModelViewProjectionMatrix);
+                    GL.UniformMatrix4(shaders[activeShader].GetUniform("lightSpaceMatrix"), false, ref lights[0].ViewProjectionMatrix);
                 }
 
                 if (shaders[activeShader].GetUniform("viewprojectionLight") != -1)
