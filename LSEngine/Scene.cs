@@ -279,6 +279,12 @@ namespace LSEngine
 
                     GL.UniformMatrix4(shaders[activeShader].GetUniform("viewprojectionLight"), false, ref lights[0].ViewProjectionMatrix);
                 }
+                if (shaders[activeShader].GetUniform("viewLight") != -1)
+                {
+                    GetLightSpaceMatrix(lights[0]);
+
+                    GL.UniformMatrix4(shaders[activeShader].GetUniform("viewLight"), false, ref lights[0].View);
+                }
 
                 if (shaders[activeShader].GetAttribute("maintexture") != -1)
                 {
