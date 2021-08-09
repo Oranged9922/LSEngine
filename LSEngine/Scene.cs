@@ -94,7 +94,7 @@ namespace LSEngine
 
 
             // shadow texture creation
-            frameBufferName = GL.GenBuffer();
+            frameBufferName = GL.GenFramebuffer();
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, frameBufferName);
             renderedTexture = GL.GenTexture();
             GL.BindTexture(TextureTarget.Texture2D, renderedTexture);
