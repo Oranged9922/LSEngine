@@ -590,12 +590,14 @@ namespace LSEngine
             if (KeyboardState.IsKeyDown(Keys.W))
             {
                 cam.Move(0f, 0.1f, 0f);
+               
 
             }
 
             if (KeyboardState.IsKeyDown(Keys.S))
             {
                 cam.Move(0f, -0.1f, 0f);
+               
 
             }
 
@@ -656,6 +658,11 @@ namespace LSEngine
             if (KeyboardState.IsKeyDown(Keys.U))
             {
                 lights[0].Direction += new Vector3(0f, 0.1f,0f);
+
+            }
+            if (KeyboardState.IsKeyDown(Keys.J))
+            {
+                lights[0].Direction += new Vector3(0f, -0.1f, 0f);
 
             }
 
