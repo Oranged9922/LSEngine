@@ -462,12 +462,14 @@ namespace LSEngine
         protected override void OnRenderFrame(FrameEventArgs args)
         {
             base.OnRenderFrame(args);
-            //GL.Viewport(0, 0, Size.X, Size.Y);
 
             //Console.WriteLine("Rendering using simpleDepthShader");
             //save this as shadow texture
+            GL.Viewport(0, 0, 1024,1024);
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, frameBufferName);
             RenderScene("simpleDepthShader");
-
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            GL.Viewport(0, 0, Size.X, Size.Y);
             //Console.WriteLine("Rendering using activeShader");
             // use shadow texture and render normally;
             RenderScene(activeShader);
