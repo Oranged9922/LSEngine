@@ -453,8 +453,9 @@ namespace LSEngine
 
         private Matrix4 GetLightSpaceMatrix(Light light)
         {
-            light.ViewProjectionMatrix = light.GetViewMatrix() *
-                Matrix4.CreatePerspectiveFieldOfView(fov, ClientSize.X / (float)ClientSize.Y, MinRenderDistance, MaxRenderDistance);
+            Matrix4.CreateOrthographicOffCenter(-Size.X/ 2f, Size.X/ 2f, -Size.Y/ 2f, Size.Y/ 2f, 1, 1000, out Matrix4 lightProjection);
+            light.ViewProjectionMatrix = light.GetViewMatrix() * lightProjection;
+                
             return light.ViewProjectionMatrix;
         }
 
