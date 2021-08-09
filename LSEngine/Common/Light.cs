@@ -37,7 +37,9 @@ namespace LSEngine.Common
         public Vector3 LookAt;
 
         public Matrix4 ViewProjectionMatrix;
-       
+
+        public Matrix4 View;
+
         public LightType Type;
 
         
@@ -58,11 +60,13 @@ namespace LSEngine.Common
         {
             Vector3 lookat = new();
 
-            lookat.X = (float)(Math.Sin((float)Direction.X) * Math.Cos((float)Direction.Y));
-            lookat.Y = (float)Math.Sin((float)Direction.Y);
-            lookat.Z = (float)(Math.Cos((float)Direction.X) * Math.Cos((float)Direction.Y));
-            LookAt = lookat;
-            return Matrix4.LookAt(Position, Position + lookat, Vector3.UnitY);
+
+            //lookat.X = (float)(Math.Sin((float)Direction.X) * Math.Cos((float)Direction.Y));
+            //lookat.Y = (float)Math.Sin((float)Direction.Y);
+            //lookat.Z = (float)(Math.Cos((float)Direction.X) * Math.Cos((float)Direction.Y));
+            LookAt = Position + Direction;
+            View = Matrix4.LookAt(Position, LookAt, Vector3.UnitY);
+            return View;
         }
     }
 
