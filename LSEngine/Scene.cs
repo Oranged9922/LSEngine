@@ -223,9 +223,9 @@ namespace LSEngine
                 objects.Add(part);
             }
 
-            Light sunLight = new(new Vector3(10, 20, 0), new Vector3(1), 0.9f, 0.9f);
+            Light sunLight = new(new Vector3(0, 1, 0), new Vector3(1), 0.9f, 0.9f);
             sunLight.Type = LightType.Directional;
-            sunLight.Direction = new Vector3(1,0,0).Normalized();
+            sunLight.Direction = new Vector3(0,1,0).Normalized();
             lights.Add(sunLight);
 
             //Light light = new(new(0,2,2), new(0.6f),0.2f);
@@ -374,6 +374,10 @@ namespace LSEngine
                 {
                     GL.Uniform3(shaders[activeShader].GetUniform("lightPos"), ref lights[0].Position);
                 }
+                if (shaders[activeShader].GetUniform("lightDir") != -1)
+                {
+                    GL.Uniform3(shaders[activeShader].GetUniform("lightDir"), ref lights[0].Direction);
+                }
                 if (shaders[activeShader].GetUniform("viewPos") != -1)
                 {
                     GL.Uniform3(shaders[activeShader].GetUniform("viewPos"), ref cam.Position);
@@ -453,7 +457,8 @@ namespace LSEngine
 
         private Matrix4 GetLightSpaceMatrix(Light light)
         {
-            Matrix4.CreateOrthographicOffCenter(-Size.X/ 2f, Size.X/ 2f, -Size.Y/ 2f, Size.Y/ 2f, 1, 1000, out Matrix4 lightProjection);
+            Matrix4.CreateOrthographicOffCenter(-Size.X/ 2f, Size.X/ 2f, -Size.Y/ 2f, Size.Y/ 2f, 1f, 1000.0f, out Matrix4 lightProjection);
+            //Matrix4.CreatePerspectiveFieldOfView(fov, Size.X / Size.Y, MinRenderDistance, MaxRenderDistance, out Matrix4 lightProjection);
             light.ViewProjectionMatrix = light.GetViewMatrix() * lightProjection;
                 
             return light.ViewProjectionMatrix;
