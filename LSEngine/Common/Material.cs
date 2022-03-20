@@ -251,5 +251,14 @@ namespace LSEngine.Common
 
             return output;
         }
+
+        internal string[] GetMaps() => new string[] 
+        {
+            this.OpacityMap,
+            this.AmbientMap,
+            this.SpecularMap,
+            this.DiffuseMap,
+            this.NormalMap 
+        };
     }
 }

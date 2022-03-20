@@ -124,8 +124,6 @@ namespace LSEngine
             // Load Materials and Textures
             LoadMaterials("Materials/sponza.mtl");
             LoadShaders(shaders, shadersList, "Shaders");
-            
-
         }
 
         private void LoadShaders(Dictionary<string, ShaderProgram> shaders, List<string> shadersList, string path)
@@ -189,29 +187,13 @@ namespace LSEngine
             // Load textures
             foreach (Material mat in materials.Values)
             {
-                if (File.Exists(mat.AmbientMap) && !textures.ContainsKey(mat.AmbientMap))
+                var maps = mat.GetMaps();
+                foreach (var map in maps)
                 {
-                    textures.Add(mat.AmbientMap, LoadImage(mat.AmbientMap));
-                }
-
-                if (File.Exists(mat.DiffuseMap) && !textures.ContainsKey(mat.DiffuseMap))
-                {
-                    textures.Add(mat.DiffuseMap, LoadImage(mat.DiffuseMap));
-                }
-
-                if (File.Exists(mat.SpecularMap) && !textures.ContainsKey(mat.SpecularMap))
-                {
-                    textures.Add(mat.SpecularMap, LoadImage(mat.SpecularMap));
-                }
-
-                if (File.Exists(mat.NormalMap) && !textures.ContainsKey(mat.NormalMap))
-                {
-                    textures.Add(mat.NormalMap, LoadImage(mat.NormalMap));
-                }
-
-                if (File.Exists(mat.OpacityMap) && !textures.ContainsKey(mat.OpacityMap))
-                {
-                    textures.Add(mat.OpacityMap, LoadImage(mat.OpacityMap));
+                    if (File.Exists(map) && !textures.ContainsKey(map))
+                    {
+                        textures.Add(map, LoadImage(map));
+                    }
                 }
             };
         }
