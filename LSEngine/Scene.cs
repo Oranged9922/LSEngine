@@ -213,7 +213,7 @@ namespace LSEngine
             }
         }
 
-        int LoadImage(Bitmap image)
+        static int LoadImage(Bitmap image)
         {
             int texID = GL.GenTexture();
 
