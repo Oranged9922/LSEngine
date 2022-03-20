@@ -99,7 +99,6 @@ namespace LSEngine
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Nearest);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Nearest);
 
-
             depthRenderBuffer = GL.GenRenderbuffer();
             GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, depthRenderBuffer);
             GL.RenderbufferStorage(RenderbufferTarget.Renderbuffer, RenderbufferStorage.DepthComponent, ClientSize.X, ClientSize.Y);
@@ -124,20 +123,57 @@ namespace LSEngine
         {
             // Load Materials and Textures
             LoadMaterials("Materials/sponza.mtl");
-            shaders.Add("normal_map", new("Shaders/vs_norm.glsl", "Shaders/fs_norm.glsl", true));
-            shadersList.Add("normal_map");
-            shaders.Add("simple_shadow", new("Shaders/vs_simple_shadow.glsl", "Shaders/fs_simple_shadow.glsl", true));
-            shadersList.Add("simple_shadow");
-            shaders.Add("lit_advanced", new("Shaders/vs_lit.glsl", "Shaders/fs_lit_advanced.glsl", true));
-            shadersList.Add("lit_advanced");
-            shaders.Add("poor_mans_zBuffer", new("Shaders/vs_zBuffer.glsl", "Shaders/fs_zBuffer.glsl", true));
-            shadersList.Add("poor_mans_zBuffer");
-            shaders.Add("shader_shadow", new("Shaders/vs_shaderShadow.glsl", "Shaders/fs_shaderShadow.glsl", true));
-            shadersList.Add("shader_shadow");
+            LoadShaders(shaders, shadersList, "Shaders");
             
-            shaders.Add("simpleDepthShader", new("Shaders/vs_simpleDepthShader.glsl", "Shaders/fs_simpleDepthShader.glsl", true));
-            shadersList.Add("simpleDepthShader");
 
+        }
+
+        private void LoadShaders(Dictionary<string, ShaderProgram> shaders, List<string> shadersList, string path)
+        {
+            var files = new DirectoryInfo(path).GetFiles();
+
+            // fills in tuples
+            var tuples = new Dictionary<string, (string vs, string fs)>();
+            foreach (var file in files)
+            {
+                var tempName = file.Name[3..^5];
+                var pathToFile = path + "/" + file.Name;
+                if (file.Name.StartsWith("vs"))
+                {
+                    
+                    if (!tuples.ContainsKey(tempName))
+                    {
+                        tuples.Add(tempName, new(pathToFile, default));
+                    }
+                    else
+                    {
+                        var t = tuples[tempName];
+                        t.vs = (t.vs == default) ? pathToFile: throw new Exception($"two shaders with same name! {file.Name}");
+                        tuples[tempName] = t;
+                    }
+                }
+                else if (file.Name.StartsWith("fs"))
+                {
+                    if (!tuples.ContainsKey(tempName))
+                    {
+                        tuples.Add(tempName, new(default, pathToFile));
+                    }
+                    else
+                    {
+                        var t = tuples[tempName];
+                        t.fs = (t.fs == default) ? pathToFile : throw new Exception($"two shaders with same name! {file.Name}");
+                        tuples[tempName] = t;
+                    }
+                }
+                else throw new Exception($"Unexpected filename, does not start with \"vs\" or \"fs\" :{pathToFile}");
+            }
+
+
+            foreach (var shad in tuples)
+            {
+                shaders.Add(shad.Key, new(shad.Value.vs, shad.Value.fs, true));
+                shadersList.Add(shad.Key);
+            }
         }
 
         private void LoadMaterials(string filename)
