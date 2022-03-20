@@ -80,7 +80,7 @@ namespace LSEngine
             GL.ClearColor(Color4.Gray);
             GL.Enable(EnableCap.DepthTest);
             PrintControls();
-            Console.WriteLine("Graphics card used: " + GL.GetString(StringName.Vendor) + ", GL version:" +  GL.GetString(StringName.Version));
+            Console.WriteLine($"Graphics card used: {GL.GetString(StringName.Vendor)}, GL version: {GL.GetString(StringName.Version)}");
         }
 
         private void InitializeProgram()
