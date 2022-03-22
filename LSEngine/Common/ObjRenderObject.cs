@@ -156,8 +156,9 @@ namespace LSEngine.Common
             int currentindice = 0;
 
             // Read file line by line
-            foreach (String line in lines)
+            foreach (string line in lines)
             {
+                if (line.StartsWith("#")) continue;
                 if (line.StartsWith("g ")) // new group definition
                 {
                     if (newObject.Parts.Count != 0)
@@ -416,6 +417,14 @@ namespace LSEngine.Common
                 }
             }
 
+            foreach (var face in faces)
+            {
+                FaceVertex v1 = new(verts[face.Item1.Vertex], normals[face.Item1.Normal], texs[face.Item1.Texcoord]);
+                FaceVertex v2 = new(verts[face.Item2.Vertex], normals[face.Item2.Normal], texs[face.Item2.Texcoord]);
+                FaceVertex v3 = new(verts[face.Item3.Vertex], normals[face.Item3.Normal], texs[face.Item3.Texcoord]);
+
+                newObject.Parts[partsIndex].faces.Add(new Tuple<FaceVertex, FaceVertex, FaceVertex>(v1, v2, v3));
+            }
             return newObject;
         }
 
