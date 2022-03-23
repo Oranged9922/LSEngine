@@ -39,7 +39,7 @@ class Scene : GameWindow
     #endregion
 
     // Vertex shaders
-    string[] vsSource =
+    static readonly string[] vsSource =
         {
 // Vertex shader with hardcoded triangle coordinates
 @"
@@ -79,7 +79,7 @@ void main()
 "
         };
     // Fragment shaders
-    string[] fsSource =
+    static readonly string[] fsSource =
     {
 @"
 #version 330 core
@@ -95,9 +95,6 @@ void main()
 ,
 ""
     };
-
-    // Max buffer length
-    const int maxBufferLength = 256;
 
     // Shader program ID
     int shaderProgramID = 0;
@@ -122,7 +119,6 @@ void main()
     {
         int vertShader, fragShader;
         int vsIndex = 0;
-        int res;
 #if _USE_BUFFERS
         vsIndex = 1;
 #endif
@@ -134,7 +130,7 @@ void main()
 
         // check if compilation was successful
         Console.WriteLine("Vertex shader compilation:");
-        GL.GetShader(vertShader, ShaderParameter.CompileStatus, out res);
+        GL.GetShader(vertShader, ShaderParameter.CompileStatus, out int res);
         if (res == 0)
         {
             Console.WriteLine(GL.GetShaderInfoLog(vertShader));
